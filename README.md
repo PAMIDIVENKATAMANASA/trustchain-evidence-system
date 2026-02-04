@@ -45,35 +45,6 @@ This is **Week 1: Project setup + basic UI**.
 ---
 
 
-
-### 🧱 Project Structure (Week 1)
-
-
-
-- `client/` – React frontend (Vite)
-
-  - `src/main.jsx` – app entry
-
-  - `src/App.jsx` – routes/layout
-
-  - `src/components/Login.jsx` – login form UI
-
-  - `src/components/Register.jsx` – registration form UI
-
-  - `src/components/OfficerDashboard.jsx` – placeholder dashboard for officer
-
-- `server/` – Node.js / Express backend
-
-  - `server.js` – basic Express app with health route
-
-- `PROGRESS.md` – week-by-week progress log
-
-
-
----
-
-
-
 ### ▶️ How to Run (Week 1)
 
 
