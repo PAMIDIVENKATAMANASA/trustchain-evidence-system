@@ -1,77 +1,117 @@
-# Blockchain-Evidence-System: TrustChain Quick Start Guide
+## TrustChain – Digital Evidence System (Week 1)
 
 
-## 🎯 What is TrustChain?
 
-TrustChain is a decentralized digital evidence chain of custody system. It leverages blockchain technology to ensure the integrity, immutability, and verifiable origin of digital evidence from collection to final courtroom review. It uses the MERN stack for the application layer, IPFS for storage, and the Ethereum Sepolia testnet for verification.
-
-## ⚡ Quick Setup (10 minutes)
-
-### Prerequisites Checklist
-Ensure you have access to the following accounts and local tools:
-- ✅ **Node.js** (v16+) installed
-- ✅ **npm** (Node Package Manager) installed
-- ✅ **MongoDB Atlas** account (already configured)
-- ✅ **Alchemy** or **Infura** account for Sepolia RPC (configured for production/testing)
-- ✅ **IPFS** desktop client or daemon installed (for local pinning)
-
-### 🔑 Essential Configuration (`server/.env`)
-
-Your server is configured to use remote services. Before starting, ensure you create a `.env` file in the `server` directory.
-
-1. Install Dependencies
-
-    # Blockchain 
-    cd blockchain
-   
-    npm install  
-       
-    # Server 
-    cd server
-   
-    npm install
-       
-    # Client 
-    cd client
-   
-    npm install 
-
-3. Deploy Contract
-
-   cd blockchain
-   npx hardhat run scripts/deploy.js --network sepolia
-   
-4. Start Services (3 Terminals)
-
-   Terminal:1	IPFS Daemon
-   
-       	ipfs daemon
-   
-   Terminal:2	Server API
-   
-       cd server && npm start
-
-   Terminal:3	Client UI
-   
-       cd client && npm run dev
-
-5. Access Application
-
-Open your browser to: http://localhost:3000
-
-You must register accounts for Officer, Judge, and Lawyer roles before testing.
-
-Test Workflow
+### 🎯 Project Overview
 
 
-The core test workflow validates the entire chain of custody:
 
-Register/Login as Officer: Upload an evidence file (pins to IPFS and records hash on Sepolia).
+TrustChain is a blockchain-based digital evidence management system.  
 
-Login as Judge: Access the evidence and verify its integrity against the blockchain record.
-
-Login as Lawyer: View the evidence details and run auxiliary analysis.
+Stack: **React (Vite)**, **Node/Express**, **MongoDB**, **IPFS**, **Ethereum Sepolia**.
 
 
-🎉 You're Ready!
-Your robust, blockchain-backed digital evidence system is now fully operational.
+
+This repo shows my project progress week by week.  
+
+This is **Week 1: Project setup + basic UI**.
+
+
+
+---
+
+
+
+### ✅ Week 1 Deliverables
+
+
+
+- Initialized **client** (React) and **server** (Express) projects.
+
+- Created **Login** and **Register** pages UI.
+
+- Created a simple **Officer Dashboard** layout.
+
+- Documented how to run the app locally.
+
+
+
+> Backend APIs and blockchain/IPFS are not fully implemented yet in Week 1.  
+
+> This week focuses on structure + basic screens.
+
+
+
+---
+
+
+
+### 🧱 Project Structure (Week 1)
+
+
+
+- `client/` – React frontend (Vite)
+
+  - `src/main.jsx` – app entry
+
+  - `src/App.jsx` – routes/layout
+
+  - `src/components/Login.jsx` – login form UI
+
+  - `src/components/Register.jsx` – registration form UI
+
+  - `src/components/OfficerDashboard.jsx` – placeholder dashboard for officer
+
+- `server/` – Node.js / Express backend
+
+  - `server.js` – basic Express app with health route
+
+- `PROGRESS.md` – week-by-week progress log
+
+
+
+---
+
+
+
+### ▶️ How to Run (Week 1)
+
+
+
+#### 1. Install dependencies
+
+
+
+# Frontend
+
+cd client
+
+npm install
+
+
+
+# Backend
+
+cd ../server
+
+npm install#### 2. Start backend server (simple health check)
+
+
+
+cd server
+
+npm startServer listens on `http://localhost:5000` (e.g., `GET /api/health`).
+
+
+
+#### 3. Start frontend
+
+
+
+cd client
+
+npm run devBy default, Vite runs at `http://localhost:5173`.
+
+
+
+---
