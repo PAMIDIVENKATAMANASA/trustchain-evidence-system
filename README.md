@@ -65,13 +65,7 @@ npm install
 
 cd ../server
 
-npm install#### 2. Start backend server (simple health check)
-
-
-
-cd server
-
-npm startServer listens on `http://localhost:5000` (e.g., `GET /api/health`).
+npm install
 
 
 
@@ -81,7 +75,7 @@ npm startServer listens on `http://localhost:5000` (e.g., `GET /api/health`).
 
 cd client
 
-npm run devBy default, Vite runs at `http://localhost:5173`.
+npm run dev
 
 
 
