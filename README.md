@@ -1,74 +1,77 @@
-## TrustChain – Digital Evidence System (Week 1)
+# Blockchain-Evidence-System: TrustChain Quick Start Guide
 
-### 🎯 Project Overview
 
-TrustChain is a blockchain-based digital evidence management system.  
-Stack: **React (Vite)**, **Node/Express**, **MongoDB**, **IPFS**, **Ethereum Sepolia**.
+## 🎯 What is TrustChain?
 
-This repo shows my project progress week by week.  
-This is **Week 1: Project setup + basic UI**.
+TrustChain is a decentralized digital evidence chain of custody system. It leverages blockchain technology to ensure the integrity, immutability, and verifiable origin of digital evidence from collection to final courtroom review. It uses the MERN stack for the application layer, IPFS for storage, and the Ethereum Sepolia testnet for verification.
 
----
+## ⚡ Quick Setup (10 minutes)
 
-### ✅ Week 1 Deliverables
+### Prerequisites Checklist
+Ensure you have access to the following accounts and local tools:
+- ✅ **Node.js** (v16+) installed
+- ✅ **npm** (Node Package Manager) installed
+- ✅ **MongoDB Atlas** account (already configured)
+- ✅ **Alchemy** or **Infura** account for Sepolia RPC (configured for production/testing)
+- ✅ **IPFS** desktop client or daemon installed (for local pinning)
 
-- Initialized **client** (React) and **server** (Express) projects.
-- Created **Login** and **Register** pages UI.
-- Created a simple **Officer Dashboard** layout.
-- Documented how to run the app locally.
+### 🔑 Essential Configuration (`server/.env`)
 
-> Backend APIs and blockchain/IPFS are not fully implemented yet in Week 1.  
-> This week focuses on structure + basic screens.
+Your server is configured to use remote services. Before starting, ensure you create a `.env` file in the `server` directory.
 
----
+1. Install Dependencies
 
-### 🧱 Project Structure (Week 1)
+    # Blockchain 
+    cd blockchain
+   
+    npm install  
+       
+    # Server 
+    cd server
+   
+    npm install
+       
+    # Client 
+    cd client
+   
+    npm install 
 
-- `client/` – React frontend (Vite)
-  - `src/main.jsx` – app entry
-  - `src/App.jsx` – routes/layout
-  - `src/components/Login.jsx` – login form UI
-  - `src/components/Register.jsx` – registration form UI
-  - `src/components/OfficerDashboard.jsx` – placeholder dashboard for officer
-- `server/` – Node.js / Express backend
-  - `server.js` – basic Express app with health route
-- `PROGRESS.md` – week-by-week progress log
+3. Deploy Contract
 
----
+   cd blockchain
+   npx hardhat run scripts/deploy.js --network sepolia
+   
+4. Start Services (3 Terminals)
 
-### ▶️ How to Run (Week 1)
+   Terminal:1	IPFS Daemon
+   
+       	ipfs daemon
+   
+   Terminal:2	Server API
+   
+       cd server && npm start
 
-#### 1. Install dependencies
+   Terminal:3	Client UI
+   
+       cd client && npm run dev
 
-# Frontend
-cd client
-npm install
+5. Access Application
 
-# Backend
-cd ../server
-npm install#### 2. Start backend server (simple health check)
+Open your browser to: http://localhost:3000
 
-cd server
-npm startServer listens on `http://localhost:5000` (e.g., `GET /api/health`).
+You must register accounts for Officer, Judge, and Lawyer roles before testing.
 
-#### 3. Start frontend
+Test Workflow
 
-cd client
-npm run devBy default, Vite runs at `http://localhost:5173`.
 
----
+The core test workflow validates the entire chain of custody:
 
-### 🖥️ What You Can See Now (Week 1)
+Register/Login as Officer: Upload an evidence file (pins to IPFS and records hash on Sepolia).
 
-- **Login Page**  
-  - Email + password inputs  
-  - Submit button (UI only / or basic request)
+Login as Judge: Access the evidence and verify its integrity against the blockchain record.
 
-- **Register Page**  
-  - Name, email, password, role fields  
-  - Submit button (UI only / or basic request)
+Login as Lawyer: View the evidence details and run auxiliary analysis.
 
-- **Officer Dashboard (basic)**  
-  - Placeholder content showing where evidence upload/list will be.
 
-In the next weeks, I will connect these pages to real APIs, MongoDB, IPFS, and Ethereum Sepolia.
+🎉 You're Ready!
+Your robust, blockchain-backed digital evidence system is now fully operational.
