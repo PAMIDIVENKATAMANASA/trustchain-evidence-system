@@ -1,4 +1,4 @@
-✅ TrustChain Evidence System
+### ✅ TrustChain Evidence System
 
 A secure full-stack web application for managing digital evidence.  
 Police officers can register, log in, upload evidence files, and view them in a protected dashboard.
@@ -40,22 +40,18 @@ Police officers can register, log in, upload evidence files, and view them in a 
 
 ▶ How to Run the Project
 
-### Backend (Server)
+## Backend (Server)
 
 cd server
 
-
 npm install
-
 
 npm start
 
-### Frontend (Client)
+## Frontend (Client)
 
 cd client
 
-
 npm install
-
 
 npm run dev
