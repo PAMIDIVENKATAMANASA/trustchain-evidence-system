@@ -2,11 +2,14 @@ const mongoose = require("mongoose");
 
 const evidenceSchema = new mongoose.Schema(
   {
+    // Simple numeric evidence identifier (auto-incremented on create)
     evidenceId: {
       type: Number,
       required: true,
       unique: true,
     },
+
+    // Basic file metadata (Week 3 requirement)
     fileName: {
       type: String,
       required: true,
@@ -19,19 +22,23 @@ const evidenceSchema = new mongoose.Schema(
       type: Number,
       required: true,
     },
+
+    // Optional fields reserved for later IPFS / blockchain integration
     ipfsHash: {
       type: String,
-      required: true,
-      unique: true,
+      required: false,
+      unique: false,
     },
     blockchainHash: {
       type: String,
-      required: true,
+      required: false,
     },
     fileHash: {
       type: String,
       default: "",
     },
+
+    // Who uploaded the evidence (officer)
     collectorId: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "User",
@@ -43,12 +50,17 @@ const evidenceSchema = new mongoose.Schema(
     },
     collectorAddress: {
       type: String,
-      required: true,
+      required: false,
+      default: "",
     },
+
+    // When the evidence was collected
     timestamp: {
       type: Date,
       required: true,
     },
+
+    // Optional GPS coordinates (if provided by frontend)
     gpsCoordinates: {
       latitude: {
         type: Number,
@@ -59,10 +71,14 @@ const evidenceSchema = new mongoose.Schema(
         default: null,
       },
     },
+
+    // Officer-provided description
     description: {
       type: String,
       default: "",
     },
+
+    // Simple status field – blockchain / verification can extend this later
     status: {
       type: String,
       enum: ["sealed", "verified", "tampered"],
