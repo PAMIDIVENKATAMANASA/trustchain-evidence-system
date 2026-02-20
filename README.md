@@ -43,11 +43,19 @@ Police officers can register, log in, upload evidence files, and view them in a 
 ### Backend (Server)
 
 cd server
+
+
 npm install
+
+
 npm start
 
 ### Frontend (Client)
 
 cd client
+
+
 npm install
+
+
 npm run dev
