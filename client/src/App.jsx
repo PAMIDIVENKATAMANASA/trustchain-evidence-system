@@ -51,14 +51,38 @@ function App() {
   }
 
   if (loading) {
-    return <div style={{ 
-      display: 'flex', 
-      justifyContent: 'center', 
-      alignItems: 'center', 
-      height: '100vh',
-      color: 'white',
-      fontSize: '1.5rem'
-    }}>Loading...</div>
+    return (
+      <div style={{ 
+        display: 'flex', 
+        flexDirection: 'column',
+        justifyContent: 'center', 
+        alignItems: 'center', 
+        height: '100vh',
+        background: 'linear-gradient(135deg, #667eea 0%, #764ba2 50%, #f093fb 100%)',
+        backgroundSize: '400% 400%',
+        animation: 'gradientShift 15s ease infinite',
+        color: 'white',
+        fontSize: '1.5rem',
+        fontWeight: '600'
+      }}>
+        <div style={{
+          width: '60px',
+          height: '60px',
+          border: '4px solid rgba(255, 255, 255, 0.3)',
+          borderTop: '4px solid white',
+          borderRadius: '50%',
+          animation: 'spin 1s linear infinite',
+          marginBottom: '20px'
+        }}></div>
+        <div>Loading TrustChain...</div>
+        <style>{`
+          @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+          }
+        `}</style>
+      </div>
+    )
   }
 
   return (
