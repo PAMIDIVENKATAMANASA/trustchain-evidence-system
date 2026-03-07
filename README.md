@@ -1,47 +1,45 @@
 ### ✅ TrustChain Evidence System
 
-A secure full-stack web application for managing digital evidence.  
-Police officers can register, log in, upload evidence files, and view them in a protected dashboard.
+A secure full-stack web application for managing digital evidence using blockchain-style storage through IPFS.
+
+Police officers can register, log in, upload evidence files, and store them securely on the IPFS (InterPlanetary File System) network while managing metadata in MongoDB.
+
+The system ensures tamper-resistant evidence storage, secure authentication, and transparent access for authorized users like officers, judges, and lawyers.
 
 🛠 Tech Stack
 
-- Frontend: React (Vite), JavaScript, CSS  
-- Backend: Node.js, Express  
-- Database: MongoDB Atlas  
-- Authentication: JWT (JSON Web Token)  
-- File Upload: Multer  
+Frontend: React (Vite), JavaScript, CSS
+Backend: Node.js, Express
+Database: MongoDB Atlas
+Authentication: JWT (JSON Web Token)
+File Upload: Multer
+Distributed Storage:IPFS (InterPlanetary File System)
+IPFS Client:ipfs-http-client
+
 
 🚀 Key Features
 
-- User registration and login with JWT authentication  
-- Role-based access control (Officer role)  
-- Protected officer dashboard  
-- Evidence file upload with metadata storage  
-- Evidence listing for logged-in officers  
-- MongoDB schema for evidence tracking  
+🔐 Secure Authentication
+👮 Role-Based Access Control
+📂 Evidence Management
+🌐 IPFS Integration
+📊 Officer Dashboard
 
-📁 Evidence Data Stored
-
-- Evidence ID (auto-increment)  
-- File name, file type, file size  
-- Collector ID and collector name  
-- Description  
-- GPS coordinates (optional)  
-- Timestamp  
-- Status (default: sealed)  
-
-🔄 Application Workflow
-
-- **Register**: User signs up → password hashed → stored in MongoDB  
-- **Login**: User logs in → JWT token generated → stored in `localStorage`  
-- **Dashboard**: Accessible only with a valid JWT token  
-- **Evidence Upload**: Officer uploads a file → metadata saved in MongoDB  
-- **Evidence List**: Officers can view their uploaded evidence  
 
 ▶ How to Run the Project
 
-## Backend (Server)
+🧩 IPFS Installation & Setup
+1️⃣ Install IPFS
 
+Download IPFS from the official website:
+
+2️⃣ Initialize IPFS
+ipfs init
+
+3️⃣ Start IPFS Daemon
+ipfs daemon(terminal-1)
+
+Backend (Server)
 cd server
 
 npm install
@@ -54,4 +52,4 @@ cd client
 
 npm install
 
-npm run dev
+npm run dev(terminal-3)
