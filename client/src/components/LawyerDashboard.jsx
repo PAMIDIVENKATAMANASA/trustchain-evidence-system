@@ -72,21 +72,14 @@ const LawyerDashboard = ({ user, onLogout }) => {
         throw new Error('Failed to download file')
       }
 
-      // Get file blob
       const blob = await response.blob()
-      
-      // Create object URL
       const url = window.URL.createObjectURL(blob)
-      
-      // Check if it's an image or PDF that can be viewed in browser
       const isViewable = fileType.startsWith('image/') || fileType === 'application/pdf'
-      
+
       if (isViewable) {
-        // Open in new tab for viewing
         window.open(url, '_blank')
         toast.success('File opened in new tab')
       } else {
-        // Download the file
         const link = document.createElement('a')
         link.href = url
         link.download = fileName
@@ -133,11 +126,11 @@ const LawyerDashboard = ({ user, onLogout }) => {
                     {item.blockchainHash && (
                       <p><strong>Blockchain Hash:</strong> <code className="hash">{item.blockchainHash}</code></p>
                     )}
-                    <p><strong>Status:</strong> 
+                    <p><strong>Status:</strong>
                       <span className={`status ${item.status}`}>
-                        {item.status === 'verified' ? '✅ Verified' : 
-                         item.status === 'tampered' ? '❌ Tampered' : 
-                         '🔒 Sealed'}
+                        {item.status === 'verified' ? '✅ Verified' :
+                          item.status === 'tampered' ? '❌ Tampered' :
+                            '🔒 Sealed'}
                       </span>
                     </p>
                     <p><strong>Uploaded:</strong> {new Date(item.timestamp).toLocaleString()}</p>
@@ -187,7 +180,7 @@ const LawyerDashboard = ({ user, onLogout }) => {
                   </div>
                   {item.blockchainHash && (
                     <div className="blockchain-links">
-                      <a 
+                      <a
                         href={`https://sepolia.etherscan.io/tx/${item.blockchainHash}`}
                         target="_blank"
                         rel="noopener noreferrer"
@@ -196,7 +189,7 @@ const LawyerDashboard = ({ user, onLogout }) => {
                         🔗 View on Etherscan
                       </a>
                       {item.ipfsHash && (
-                        <a 
+                        <a
                           href={`https://ipfs.io/ipfs/${item.ipfsHash}`}
                           target="_blank"
                           rel="noopener noreferrer"
@@ -230,4 +223,3 @@ const LawyerDashboard = ({ user, onLogout }) => {
 }
 
 export default LawyerDashboard
-
