@@ -2,13 +2,13 @@ const express = require("express");
 const multer = require("multer");
 const { authenticate, authorize } = require("../middleware/auth");
 const Evidence = require("../models/Evidence");
-const { uploadToIPFS, getPublicGatewayURL } = require("../services/ipfs");
+const { uploadToIPFS, calculateFileHash, downloadFromIPFS, getPublicGatewayURL } = require("../services/ipfs");
+const { addEvidence, getSignerAddress } = require("../services/blockchain");
+const { ethers } = require("ethers");
 
 const router = express.Router();
 
-// ---------------------------------------------------------------------------
-// Multer configuration: use memory storage for IPFS upload
-// ---------------------------------------------------------------------------
+// Configure multer for file uploads
 const upload = multer({
   storage: multer.memoryStorage(),
   limits: {
@@ -16,10 +16,7 @@ const upload = multer({
   },
 });
 
-// ---------------------------------------------------------------------------
-// POST /api/evidence/upload
-// Officer uploads a file – upload to IPFS and store metadata in MongoDB
-// ---------------------------------------------------------------------------
+// Upload evidence (Officer only)
 router.post(
   "/upload",
   authenticate,
@@ -34,55 +31,92 @@ router.post(
       const { description, gpsLatitude, gpsLongitude } = req.body;
       const officer = req.user;
 
-      // Step 1: Upload file to IPFS
-      let ipfsResult;
-      try {
-        ipfsResult = await uploadToIPFS(req.file.buffer, req.file.originalname);
-        console.log(`✅ File uploaded to IPFS: ${ipfsResult.cid}`);
-      } catch (ipfsError) {
-        console.error("IPFS upload error:", ipfsError);
-        return res.status(500).json({
-          message: "Error uploading to IPFS",
-          error: ipfsError.message,
-        });
+      // Step 1: Calculate file hash (SHA256) for integrity verification
+      const fileHash = calculateFileHash(req.file.buffer);
+      const fileHashBytes32 = ethers.keccak256(ethers.toUtf8Bytes(fileHash));
+
+      // Step 2: Upload file to IPFS
+      const ipfsResult = await uploadToIPFS(req.file.buffer, req.file.originalname);
+
+      // Step 3: Determine collector blockchain address
+      // If officer has a walletAddress, use it; otherwise fall back to signer address
+      let collectorAddress = officer.walletAddress;
+      if (!collectorAddress || collectorAddress === "0x0000000000000000000000000000000000000000") {
+        collectorAddress =
+          process.env.DEFAULT_COLLECTOR_ADDRESS || (await getSignerAddress());
       }
 
-      // Step 2: Generate evidenceId (auto-increment)
-      const lastEvidence = await Evidence.findOne().sort({ evidenceId: -1 });
-      const nextEvidenceId = lastEvidence ? lastEvidence.evidenceId + 1 : 1;
+      // Step 4: Add evidence hash to blockchain (store file hash, not IPFS CID)
+      const blockchainResult = await addEvidence(fileHashBytes32, collectorAddress);
 
-      // Step 3: Create evidence record with IPFS hash
-      const evidence = new Evidence({
-        evidenceId: nextEvidenceId,
-        fileName: req.file.originalname,
-        fileType: req.file.mimetype,
-        fileSize: req.file.size,
-        ipfsHash: ipfsResult.cid,
-        collectorId: officer._id,
-        collectorName: officer.name,
-        collectorAddress: officer.walletAddress || "",
-        timestamp: new Date(),
-        gpsCoordinates: {
-          latitude: gpsLatitude ? parseFloat(gpsLatitude) : null,
-          longitude: gpsLongitude ? parseFloat(gpsLongitude) : null,
-        },
-        description: description || "",
-        status: "sealed",
-      });
+      // Log network info for debugging
+      if (blockchainResult.network === "localhost") {
+        console.warn("⚠️  WARNING: Using localhost blockchain. Transactions won't appear on Etherscan!");
+        console.warn("   Update server/.env: BLOCKCHAIN_RPC_URL=https://rpc.sepolia.org");
+      }
 
-      await evidence.save();
+      // Step 5: Save evidence record — use transaction hash as the unique key.
+      // The blockchain evidenceId counter may be ahead of MongoDB if a previous
+      // upload succeeded on-chain but failed to save, so we never reject based
+      // on evidenceId alone.
+      const evidenceId = parseInt(blockchainResult.evidenceId);
 
-      // Step 4: Return response with IPFS gateway URL
-      const ipfsGatewayURL = getPublicGatewayURL(ipfsResult.cid);
-      const ipfsPublicURL = `https://ipfs.io/ipfs/${ipfsResult.cid}`;
+      // Check if we already recorded this exact transaction
+      let evidence = await Evidence.findOne({ blockchainHash: blockchainResult.transactionHash });
+
+      if (evidence) {
+        // Same transaction already saved — idempotent, just return it
+        console.log(`ℹ️  Evidence tx ${blockchainResult.transactionHash} already recorded. Returning existing record.`);
+      } else {
+        // If the evidenceId already exists in DB (counter collision), resolve it
+        // by finding a unique evidenceId to use for this new entry.
+        let resolvedId = evidenceId;
+        const existing = await Evidence.findOne({ evidenceId: resolvedId });
+        if (existing) {
+          console.warn(`⚠️  evidenceId ${resolvedId} already in DB (different tx). Storing with unique offset.`);
+          // Find the next unused evidenceId above the collision
+          const lastDoc = await Evidence.findOne().sort({ evidenceId: -1 });
+          resolvedId = lastDoc ? lastDoc.evidenceId + 1 : evidenceId;
+        }
+
+        // Create new evidence record
+        evidence = new Evidence({
+          evidenceId: resolvedId,
+          blockchainEvidenceId: evidenceId, // ← real on-chain counter, used for getOriginalHash
+          fileName: req.file.originalname,
+          fileType: req.file.mimetype,
+          fileSize: req.file.size,
+          ipfsHash: ipfsResult.cid,
+          blockchainHash: blockchainResult.transactionHash,
+          fileHash: fileHash, // Store original file hash for reference
+          collectorId: officer._id,
+          collectorName: officer.name,
+          collectorAddress: collectorAddress,
+          timestamp: new Date(),
+          gpsCoordinates: {
+            latitude: gpsLatitude ? parseFloat(gpsLatitude) : null,
+            longitude: gpsLongitude ? parseFloat(gpsLongitude) : null,
+          },
+          description: description || "",
+          status: "sealed",
+        });
+
+        await evidence.save();
+      }
 
       res.status(201).json({
-        message: "Evidence uploaded and stored on IPFS successfully",
+        message: "Evidence uploaded and sealed successfully",
         evidence: {
-          ...evidence.toObject(),
-          ipfsHash: ipfsResult.cid,
-          ipfsGatewayURL: ipfsGatewayURL,
-          ipfsPublicURL: ipfsPublicURL,
+          evidenceId: evidence.evidenceId,
+          fileName: evidence.fileName,
+          ipfsHash: evidence.ipfsHash,
+          ipfsGatewayURL: getPublicGatewayURL(evidence.ipfsHash),
+          ipfsPublicURL: `https://ipfs.io/ipfs/${evidence.ipfsHash}`,
+          blockchainHash: evidence.blockchainHash,
+          etherscanUrl: blockchainResult.etherscanUrl || null,
+          network: blockchainResult.network || "unknown",
+          timestamp: evidence.timestamp,
+          status: evidence.status,
         },
       });
     } catch (error) {
@@ -95,37 +129,38 @@ router.post(
   }
 );
 
-// ---------------------------------------------------------------------------
-// GET /api/evidence
-// Officer: sees only their own evidence
-// Other roles (judge/lawyer): can see all
-// Includes IPFS gateway URLs in response
-// ---------------------------------------------------------------------------
+// Get all evidence (Judge and Lawyer can see all, Officer sees only their own)
 router.get("/", authenticate, async (req, res) => {
   try {
-    const query = {};
+    let query = {};
 
+    // Officers can only see their own evidence
     if (req.user.role === "officer") {
       query.collectorId = req.user._id;
     }
 
-    const evidenceList = await Evidence.find(query)
+    const evidence = await Evidence.find(query)
       .populate("collectorId", "name email")
       .sort({ createdAt: -1 });
 
-    // Add IPFS gateway URLs to each evidence record
-    const evidenceWithIPFS = evidenceList.map((item) => {
+    // Add Etherscan and IPFS URLs for each evidence item
+    const evidenceWithLinks = evidence.map((item) => {
       const evidenceObj = item.toObject();
+      // Generate Etherscan URL if we have a blockchain hash and it's Sepolia
+      if (evidenceObj.blockchainHash && !evidenceObj.blockchainHash.includes('localhost')) {
+        evidenceObj.etherscanUrl = `https://sepolia.etherscan.io/tx/${evidenceObj.blockchainHash}`;
+      }
+      // Add IPFS public URL
       if (evidenceObj.ipfsHash) {
-        evidenceObj.ipfsGatewayURL = getPublicGatewayURL(evidenceObj.ipfsHash);
         evidenceObj.ipfsPublicURL = `https://ipfs.io/ipfs/${evidenceObj.ipfsHash}`;
+        evidenceObj.ipfsGatewayURL = getPublicGatewayURL(evidenceObj.ipfsHash);
       }
       return evidenceObj;
     });
 
     res.json({
-      count: evidenceWithIPFS.length,
-      evidence: evidenceWithIPFS,
+      count: evidenceWithLinks.length,
+      evidence: evidenceWithLinks,
     });
   } catch (error) {
     console.error("Get evidence error:", error);
@@ -133,5 +168,82 @@ router.get("/", authenticate, async (req, res) => {
   }
 });
 
-module.exports = router;
+// Download/View evidence file from IPFS (Judge and Lawyer can access)
+// IMPORTANT: This route must come BEFORE /:evidenceId to avoid route conflicts
+router.get("/:evidenceId/download", authenticate, async (req, res) => {
+  try {
+    const { evidenceId } = req.params;
+    let query = { evidenceId: parseInt(evidenceId) };
 
+    // Officers can only see their own evidence
+    if (req.user.role === "officer") {
+      query.collectorId = req.user._id;
+    }
+
+    const evidence = await Evidence.findOne(query);
+
+    if (!evidence) {
+      return res.status(404).json({ message: "Evidence not found" });
+    }
+
+    // Download file from IPFS
+    const ipfsResult = await downloadFromIPFS(evidence.ipfsHash);
+
+    // Set appropriate headers for file download/view
+    const fileName = evidence.fileName;
+    const fileType = evidence.fileType || "application/octet-stream";
+
+    res.setHeader("Content-Type", fileType);
+    res.setHeader(
+      "Content-Disposition",
+      `inline; filename="${encodeURIComponent(fileName)}"`
+    );
+    res.setHeader("Content-Length", ipfsResult.buffer.length);
+
+    // Send file buffer
+    res.send(ipfsResult.buffer);
+  } catch (error) {
+    console.error("Error downloading evidence file:", error);
+    res.status(500).json({
+      message: "Error downloading evidence file",
+      error: error.message,
+    });
+  }
+});
+
+// Get single evidence by ID
+// IMPORTANT: This route must come AFTER /:evidenceId/download to avoid route conflicts
+router.get("/:evidenceId", authenticate, async (req, res) => {
+  try {
+    const { evidenceId } = req.params;
+    let query = { evidenceId: parseInt(evidenceId) };
+
+    // Officers can only see their own evidence
+    if (req.user.role === "officer") {
+      query.collectorId = req.user._id;
+    }
+
+    const evidence = await Evidence.findOne(query).populate(
+      "collectorId",
+      "name email"
+    );
+
+    if (!evidence) {
+      return res.status(404).json({ message: "Evidence not found" });
+    }
+
+    // Add public gateway URL to response
+    const evidenceWithGateway = {
+      ...evidence.toObject(),
+      ipfsGatewayURL: getPublicGatewayURL(evidence.ipfsHash),
+      ipfsPublicURL: `https://ipfs.io/ipfs/${evidence.ipfsHash}`,
+    };
+
+    res.json({ evidence: evidenceWithGateway });
+  } catch (error) {
+    console.error("Get evidence error:", error);
+    res.status(500).json({ message: "Error fetching evidence" });
+  }
+});
+
+module.exports = router;
