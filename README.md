@@ -1,55 +1,77 @@
-### ✅ TrustChain Evidence System
-
-A secure full-stack web application for managing digital evidence using blockchain-style storage through IPFS.
-
-Police officers can register, log in, upload evidence files, and store them securely on the IPFS (InterPlanetary File System) network while managing metadata in MongoDB.
-
-The system ensures tamper-resistant evidence storage, secure authentication, and transparent access for authorized users like officers, judges, and lawyers.
-
-🛠 Tech Stack
-
-Frontend: React (Vite), JavaScript, CSS
-Backend: Node.js, Express
-Database: MongoDB Atlas
-Authentication: JWT (JSON Web Token)
-File Upload: Multer
-Distributed Storage:IPFS (InterPlanetary File System)
-IPFS Client:ipfs-http-client
+# Blockchain-Evidence-System: TrustChain Quick Start Guide
 
 
-🚀 Key Features
+## 🎯 TrustChain
 
-🔐 Secure Authentication
-👮 Role-Based Access Control
-📂 Evidence Management
-🌐 IPFS Integration
-📊 Officer Dashboard
+TrustChain is a decentralized digital evidence chain of custody system. It leverages blockchain technology to ensure the integrity, immutability, and verifiable origin of digital evidence from collection to final courtroom review. It uses the MERN stack for the application layer, IPFS for storage, and the Ethereum Sepolia testnet for verification.
+
+## ⚡ Quick Setup (10 minutes)
+
+### Prerequisites Checklist
+Ensure you have access to the following accounts and local tools:
+- ✅ **Node.js** (v16+) installed
+- ✅ **npm** (Node Package Manager) installed
+- ✅ **MongoDB Atlas** account (already configured)
+- ✅ **Alchemy** or **Infura** account for Sepolia RPC (configured for production/testing)
+- ✅ **IPFS** desktop client or daemon installed (for local pinning)
+
+### 🔑 Essential Configuration (`server/.env`)
+
+Your server is configured to use remote services. Before starting, ensure you create a `.env` file in the `server` directory.
+
+1. Install Dependencies
+
+    # Blockchain 
+    cd blockchain
+   
+    npm install  
+       
+    # Server 
+    cd server
+   
+    npm install
+       
+    # Client 
+    cd client
+   
+    npm install 
+
+3. Deploy Contract
+
+   cd blockchain
+   npx hardhat run scripts/deploy.js --network sepolia
+   
+4. Start Services (3 Terminals)
+
+   Terminal:1	IPFS Daemon
+   
+       	ipfs daemon
+   
+   Terminal:2	Server API
+   
+       cd server && npm start
+
+   Terminal:3	Client UI
+   
+       cd client && npm run dev
+
+5. Access Application
+
+Open your browser to: http://localhost:3000
+
+You must register accounts for Officer, Judge, and Lawyer roles before testing.
+
+Test Workflow
 
 
-▶ How to Run the Project
+The core test workflow validates the entire chain of custody:
 
-🧩 IPFS Installation & Setup
-1️⃣ Install IPFS
+Register/Login as Officer: Upload an evidence file (pins to IPFS and records hash on Sepolia).
 
-Download IPFS from the official website:
+Login as Judge: Access the evidence and verify its integrity against the blockchain record.
 
-2️⃣ Initialize IPFS
-ipfs init
+Login as Lawyer: View the evidence details and run auxiliary analysis.
 
-3️⃣ Start IPFS Daemon
-ipfs daemon(terminal-1)
 
-Backend (Server)
-cd server
-
-npm install
-
-npm start
-
-## Frontend (Client)
-
-cd client
-
-npm install
-
-npm run dev(terminal-3)
+🎉 You're Ready!
+Your robust, blockchain-backed digital evidence system is now fully operational.
