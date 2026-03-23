@@ -1,0 +1,19 @@
+{
+    "name": "trustchain-blockchain",
+    "version": "1.0.0",
+    "description": "ChainOfCustody smart contract for TrustChain Evidence System",
+    "scripts": {
+        "compile": "hardhat compile",
+        "deploy:local": "hardhat run scripts/deploy.js --network localhost",
+        "deploy:sepolia": "hardhat run scripts/deploy.js --network sepolia",
+        "node": "hardhat node",
+        "test": "hardhat test"
+    },
+    "devDependencies": {
+        "@nomicfoundation/hardhat-toolbox": "^4.0.0",
+        "hardhat": "^2.19.0"
+    },
+    "dependencies": {
+        "dotenv": "^16.3.1"
+    }
+}

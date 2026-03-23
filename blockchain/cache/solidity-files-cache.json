@@ -1,0 +1,40 @@
+{
+  "_format": "hh-sol-cache-2",
+  "files": {
+    "/home/manasa/trustchain-evidence-system/blockchain/contracts/ChainOfCustody.sol": {
+      "lastModificationDate": 1774241687476,
+      "contentHash": "0aa2666c7eb2949dc79e704a94530067",
+      "sourceName": "contracts/ChainOfCustody.sol",
+      "solcConfig": {
+        "version": "0.8.19",
+        "settings": {
+          "optimizer": {
+            "enabled": true,
+            "runs": 200
+          },
+          "outputSelection": {
+            "*": {
+              "*": [
+                "abi",
+                "evm.bytecode",
+                "evm.deployedBytecode",
+                "evm.methodIdentifiers",
+                "metadata"
+              ],
+              "": [
+                "ast"
+              ]
+            }
+          }
+        }
+      },
+      "imports": [],
+      "versionPragmas": [
+        "^0.8.19"
+      ],
+      "artifacts": [
+        "ChainOfCustody"
+      ]
+    }
+  }
+}
