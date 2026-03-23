@@ -69,21 +69,14 @@ const JudgeDashboard = ({ user, onLogout }) => {
         throw new Error('Failed to download file')
       }
 
-      // Get file blob
       const blob = await response.blob()
-      
-      // Create object URL
       const url = window.URL.createObjectURL(blob)
-      
-      // Check if it's an image or PDF that can be viewed in browser
       const isViewable = fileType.startsWith('image/') || fileType === 'application/pdf'
-      
+
       if (isViewable) {
-        // Open in new tab for viewing
         window.open(url, '_blank')
         toast.success('File opened in new tab')
       } else {
-        // Download the file
         const link = document.createElement('a')
         link.href = url
         link.download = fileName
@@ -128,11 +121,11 @@ const JudgeDashboard = ({ user, onLogout }) => {
                     <p><strong>Size:</strong> {(item.fileSize / 1024 / 1024).toFixed(2)} MB</p>
                     <p><strong>IPFS Hash:</strong> <code className="hash">{item.ipfsHash}</code></p>
                     <p><strong>Blockchain Hash:</strong> <code className="hash">{item.blockchainHash}</code></p>
-                    <p><strong>Status:</strong> 
+                    <p><strong>Status:</strong>
                       <span className={`status ${item.status}`}>
-                        {item.status === 'verified' ? '✅ Verified' : 
-                         item.status === 'tampered' ? '❌ Tampered' : 
-                         '🔒 Sealed'}
+                        {item.status === 'verified' ? '✅ Verified' :
+                          item.status === 'tampered' ? '❌ Tampered' :
+                            '🔒 Sealed'}
                       </span>
                     </p>
                     <p><strong>Uploaded:</strong> {new Date(item.timestamp).toLocaleString()}</p>
@@ -146,7 +139,7 @@ const JudgeDashboard = ({ user, onLogout }) => {
                       disabled={verifying === item.evidenceId}
                       className="verify-btn"
                     >
-                      {verifying === item.evidenceId ? 'Verifying...' : 'Verify Integrity'}
+                      {verifying === item.evidenceId ? '⏳ Verifying...' : '🔍 Verify Integrity'}
                     </button>
                     <button
                       onClick={() => handleViewFile(item.evidenceId, item.fileName, item.fileType)}
@@ -157,7 +150,7 @@ const JudgeDashboard = ({ user, onLogout }) => {
                   </div>
                   {item.blockchainHash && (
                     <div className="blockchain-links">
-                      <a 
+                      <a
                         href={`https://sepolia.etherscan.io/tx/${item.blockchainHash}`}
                         target="_blank"
                         rel="noopener noreferrer"
@@ -166,7 +159,7 @@ const JudgeDashboard = ({ user, onLogout }) => {
                         🔗 View on Etherscan
                       </a>
                       {item.ipfsHash && (
-                        <a 
+                        <a
                           href={`https://ipfs.io/ipfs/${item.ipfsHash}`}
                           target="_blank"
                           rel="noopener noreferrer"
@@ -188,4 +181,3 @@ const JudgeDashboard = ({ user, onLogout }) => {
 }
 
 export default JudgeDashboard
-
