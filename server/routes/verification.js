@@ -1,7 +1,6 @@
 const express = require("express");
 const { authenticate, authorize } = require("../middleware/auth");
 const Evidence = require("../models/Evidence");
-const { downloadFromIPFS, calculateFileHash } = require("../services/ipfs");
 const { getOriginalHash } = require("../services/blockchain");
 const { ethers } = require("ethers");
 
@@ -21,24 +20,44 @@ router.post(
       const evidence = await Evidence.findOne({ evidenceId: evidenceIdNum });
 
       if (!evidence) {
-        return res.status(404).json({ message: "Evidence not found" });
+        return res.status(404).json({ message: "Evidence not found in database" });
       }
 
-      // Step 2: Download file from IPFS
-      const ipfsResult = await downloadFromIPFS(evidence.ipfsHash);
+      // Step 2: Use the stored fileHash (computed at upload time) — no IPFS download needed.
+      // This avoids the local IPFS daemon dependency during verification.
+      if (!evidence.fileHash) {
+        return res.status(400).json({
+          message: "Evidence record has no stored file hash. Was it uploaded before blockchain integration?",
+        });
+      }
 
-      // Step 3: Calculate hash of downloaded file (same method as upload)
-      const currentFileHash = calculateFileHash(ipfsResult.buffer);
-      const currentHashBytes32 = ethers.keccak256(ethers.toUtf8Bytes(currentFileHash));
+      const currentHashBytes32 = ethers.keccak256(ethers.toUtf8Bytes(evidence.fileHash));
 
-      // Step 4: Get original hash from blockchain
-      const blockchainData = await getOriginalHash(evidenceIdNum);
+      // Step 3: Get original hash from blockchain.
+      // blockchainEvidenceId is the real Solidity counter stored at upload time.
+      // Fall back to evidenceIdNum for old records without this field.
+      const onChainId = (evidence.blockchainEvidenceId != null)
+        ? evidence.blockchainEvidenceId
+        : evidenceIdNum;
+
+      let blockchainData;
+      try {
+        blockchainData = await getOriginalHash(onChainId);
+      } catch (bcError) {
+        return res.status(502).json({
+          message: "Could not reach blockchain RPC. Check BLOCKCHAIN_RPC_URL in server/.env",
+          error: bcError.message,
+        });
+      }
 
       if (!blockchainData.exists) {
-        return res.status(404).json({ message: "Evidence not found on blockchain" });
+        return res.status(404).json({
+          message: `Evidence not found on blockchain (chain ID ${onChainId}). The record may pre-date blockchain integration.`,
+          onChainId,
+        });
       }
 
-      // Step 5: Compare hashes (both should be bytes32 from file hash)
+      // Step 4: Compare hashes
       const originalHash = blockchainData.hash;
       const isAuthentic = currentHashBytes32.toLowerCase() === originalHash.toLowerCase();
 
@@ -50,15 +69,16 @@ router.post(
         evidenceId: evidenceIdNum,
         fileName: evidence.fileName,
         verificationResult: isAuthentic ? "100% Authentic" : "Tampered",
-        isAuthentic: isAuthentic,
+        isAuthentic,
         details: {
-          originalHash: originalHash,
+          originalHash,
           currentHash: currentHashBytes32,
-          fileHash: currentFileHash,
+          fileHash: evidence.fileHash,
           ipfsHash: evidence.ipfsHash,
           collector: evidence.collectorName,
           timestamp: evidence.timestamp,
           blockchainTimestamp: new Date(parseInt(blockchainData.timestamp) * 1000),
+          onChainId,
         },
       });
     } catch (error) {
