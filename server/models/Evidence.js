@@ -33,6 +33,13 @@ const evidenceSchema = new mongoose.Schema(
       type: String,
       required: false,
     },
+    // The actual Solidity contract evidenceCounter value used during addEvidence().
+    // This may differ from evidenceId when a collision offset was applied in MongoDB.
+    blockchainEvidenceId: {
+      type: Number,
+      required: false,
+      default: null,
+    },
     fileHash: {
       type: String,
       default: "",
