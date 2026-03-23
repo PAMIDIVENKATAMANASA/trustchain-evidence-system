@@ -93,7 +93,10 @@ const OfficerDashboard = ({ user, onLogout }) => {
       const data = await response.json()
 
       if (response.ok) {
-        toast.success('Evidence uploaded and sealed successfully!')
+        toast.success('Evidence uploaded and sealed on blockchain!')
+        if (data.evidence?.etherscanUrl) {
+          toast.info(`🔗 TX: ${data.evidence.etherscanUrl}`, { autoClose: 8000 })
+        }
         setFormData({
           file: null,
           description: '',
@@ -132,7 +135,6 @@ const OfficerDashboard = ({ user, onLogout }) => {
                 id="file-input"
                 type="file"
                 onChange={handleFileChange}
-                // Accept any file type: images, videos, audio, PDFs, text, documents, etc.
                 accept="*/*"
                 required
               />
@@ -172,7 +174,7 @@ const OfficerDashboard = ({ user, onLogout }) => {
               </div>
             </div>
             <button type="submit" disabled={uploading} className="submit-btn">
-              {uploading ? 'Uploading...' : 'Upload & Seal Evidence'}
+              {uploading ? 'Sealing on Blockchain...' : '🔒 Upload & Seal Evidence'}
             </button>
           </form>
         </div>
@@ -189,37 +191,32 @@ const OfficerDashboard = ({ user, onLogout }) => {
                   <p><strong>Evidence ID:</strong> {item.evidenceId}</p>
                   <p><strong>Type:</strong> {item.fileType}</p>
                   <p><strong>Size:</strong> {(item.fileSize / 1024 / 1024).toFixed(2)} MB</p>
+                  <p><strong>IPFS Hash:</strong> <code className="hash">{item.ipfsHash}</code></p>
+                  <p><strong>Blockchain Hash:</strong> <code className="hash">{item.blockchainHash}</code></p>
                   <p><strong>Status:</strong> <span className={`status ${item.status}`}>{item.status}</span></p>
                   <p><strong>Uploaded:</strong> {new Date(item.timestamp).toLocaleString()}</p>
                   {item.description && <p><strong>Description:</strong> {item.description}</p>}
-                  {item.ipfsHash && (
-                    <>
-                      <p><strong>IPFS Hash:</strong> <code className="hash">{item.ipfsHash}</code></p>
-                      <div className="blockchain-links">
-                        <a 
-                          href={item.ipfsPublicURL || `https://ipfs.io/ipfs/${item.ipfsHash}`}
+                  {item.blockchainHash && (
+                    <div className="blockchain-links">
+                      <a
+                        href={`https://sepolia.etherscan.io/tx/${item.blockchainHash}`}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="etherscan-link"
+                      >
+                        🔗 View on Etherscan
+                      </a>
+                      {item.ipfsHash && (
+                        <a
+                          href={`https://ipfs.io/ipfs/${item.ipfsHash}`}
                           target="_blank"
                           rel="noopener noreferrer"
                           className="ipfs-link"
                         >
                           📦 View on IPFS
                         </a>
-                        {item.ipfsGatewayURL && (
-                          <a 
-                            href={item.ipfsGatewayURL}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="ipfs-link"
-                            style={{ background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)' }}
-                          >
-                          🔗 Local Gateway
-                          </a>
-                        )}
-                      </div>
-                    </>
-                  )}
-                  {item.blockchainHash && (
-                    <p><strong>Blockchain Hash:</strong> <code className="hash">{item.blockchainHash}</code></p>
+                      )}
+                    </div>
                   )}
                 </div>
               ))}
@@ -232,4 +229,3 @@ const OfficerDashboard = ({ user, onLogout }) => {
 }
 
 export default OfficerDashboard
-
