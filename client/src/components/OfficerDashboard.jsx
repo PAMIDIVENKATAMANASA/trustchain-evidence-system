@@ -208,12 +208,13 @@ const OfficerDashboard = ({ user, onLogout }) => {
                       </a>
                       {item.ipfsHash && (
                         <a
-                          href={`https://ipfs.io/ipfs/${item.ipfsHash}`}
+                          href={item.ipfsGatewayURL || `http://localhost:8080/ipfs/${item.ipfsHash}`}
                           target="_blank"
                           rel="noopener noreferrer"
                           className="ipfs-link"
+                          title="Opens via local IPFS gateway (localhost:8080). Make sure IPFS daemon is running."
                         >
-                          📦 View on IPFS
+                          📦 View on IPFS (Local)
                         </a>
                       )}
                     </div>
