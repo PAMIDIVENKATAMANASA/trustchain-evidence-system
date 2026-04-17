@@ -63,6 +63,16 @@ mongoose
   })
   .then(() => {
     console.log("✅ Connected to MongoDB");
+    // Drop stale unique index on ipfsHash (was unique in old schema, now non-unique)
+    mongoose.connection.db.collection('evidences').dropIndex('ipfsHash_1')
+      .then(() => console.log('✅ Dropped stale ipfsHash_1 unique index'))
+      .catch(err => {
+        if (err.codeName === 'IndexNotFound') {
+          console.log('ℹ️  ipfsHash_1 index already removed — no action needed');
+        } else {
+          console.warn('⚠️  Could not drop ipfsHash_1 index:', err.message);
+        }
+      });
   })
   .catch((err) => {
     console.error("❌ MongoDB connection error:", err.message);

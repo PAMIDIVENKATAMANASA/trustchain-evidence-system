@@ -121,6 +121,13 @@ router.post(
       });
     } catch (error) {
       console.error("Evidence upload error:", error);
+      // Handle MongoDB duplicate key error (stale unique index or re-upload)
+      if (error.code === 11000) {
+        return res.status(409).json({
+          message: "This evidence file has already been uploaded and sealed.",
+          error: "Duplicate evidence detected (same IPFS content hash).",
+        });
+      }
       res.status(500).json({
         message: "Error uploading evidence",
         error: error.message,
