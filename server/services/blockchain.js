@@ -1,136 +1,234 @@
 const { ethers } = require("ethers");
-const fs = require("fs");
-const path = require("path");
 
-// Load contract ABI and address
-let contractABI = null;
-let contractAddress = null;
+// ─── Embedded Contract ABI and Address ───────────────────────────────────────
+// Previously loaded from ../../blockchain/artifacts/... at runtime.
+// Embedded here because Render only deploys server/ — the blockchain/ folder is absent.
+const CONTRACT_ADDRESS = "0x3724EB94c9B96C6dB0A7A3253895995A6260C5bf";
+const CONTRACT_ABI = [
+  {
+    inputs: [],
+    stateMutability: "nonpayable",
+    type: "constructor",
+  },
+  {
+    anonymous: false,
+    inputs: [
+      { indexed: true, internalType: "uint256", name: "evidenceId", type: "uint256" },
+      { indexed: true, internalType: "bytes32", name: "hash", type: "bytes32" },
+      { indexed: true, internalType: "address", name: "collector", type: "address" },
+      { indexed: false, internalType: "uint256", name: "timestamp", type: "uint256" },
+    ],
+    name: "EvidenceAdded",
+    type: "event",
+  },
+  {
+    anonymous: false,
+    inputs: [{ indexed: true, internalType: "address", name: "judge", type: "address" }],
+    name: "JudgeGranted",
+    type: "event",
+  },
+  {
+    anonymous: false,
+    inputs: [{ indexed: true, internalType: "address", name: "judge", type: "address" }],
+    name: "JudgeRevoked",
+    type: "event",
+  },
+  {
+    anonymous: false,
+    inputs: [{ indexed: true, internalType: "address", name: "lawyer", type: "address" }],
+    name: "LawyerGranted",
+    type: "event",
+  },
+  {
+    anonymous: false,
+    inputs: [{ indexed: true, internalType: "address", name: "lawyer", type: "address" }],
+    name: "LawyerRevoked",
+    type: "event",
+  },
+  {
+    inputs: [
+      { internalType: "bytes32", name: "_hash", type: "bytes32" },
+      { internalType: "address", name: "_collector", type: "address" },
+    ],
+    name: "addEvidence",
+    outputs: [{ internalType: "uint256", name: "", type: "uint256" }],
+    stateMutability: "nonpayable",
+    type: "function",
+  },
+  {
+    inputs: [],
+    name: "evidenceCounter",
+    outputs: [{ internalType: "uint256", name: "", type: "uint256" }],
+    stateMutability: "view",
+    type: "function",
+  },
+  {
+    inputs: [{ internalType: "uint256", name: "_evidenceId", type: "uint256" }],
+    name: "evidenceExists",
+    outputs: [{ internalType: "bool", name: "", type: "bool" }],
+    stateMutability: "view",
+    type: "function",
+  },
+  {
+    inputs: [{ internalType: "uint256", name: "", type: "uint256" }],
+    name: "evidenceRecords",
+    outputs: [
+      { internalType: "bytes32", name: "hash", type: "bytes32" },
+      { internalType: "address", name: "collector", type: "address" },
+      { internalType: "uint256", name: "timestamp", type: "uint256" },
+      { internalType: "bool", name: "exists", type: "bool" },
+    ],
+    stateMutability: "view",
+    type: "function",
+  },
+  {
+    inputs: [],
+    name: "getEvidenceCount",
+    outputs: [{ internalType: "uint256", name: "", type: "uint256" }],
+    stateMutability: "view",
+    type: "function",
+  },
+  {
+    inputs: [{ internalType: "uint256", name: "_evidenceId", type: "uint256" }],
+    name: "getOriginalHash",
+    outputs: [
+      { internalType: "bytes32", name: "hash", type: "bytes32" },
+      { internalType: "address", name: "collector", type: "address" },
+      { internalType: "uint256", name: "timestamp", type: "uint256" },
+      { internalType: "bool", name: "exists", type: "bool" },
+    ],
+    stateMutability: "view",
+    type: "function",
+  },
+  {
+    inputs: [{ internalType: "address", name: "_judge", type: "address" }],
+    name: "grantJudge",
+    outputs: [],
+    stateMutability: "nonpayable",
+    type: "function",
+  },
+  {
+    inputs: [{ internalType: "address", name: "_lawyer", type: "address" }],
+    name: "grantLawyer",
+    outputs: [],
+    stateMutability: "nonpayable",
+    type: "function",
+  },
+  {
+    inputs: [{ internalType: "address", name: "_address", type: "address" }],
+    name: "isJudge",
+    outputs: [{ internalType: "bool", name: "", type: "bool" }],
+    stateMutability: "view",
+    type: "function",
+  },
+  {
+    inputs: [{ internalType: "address", name: "_address", type: "address" }],
+    name: "isLawyer",
+    outputs: [{ internalType: "bool", name: "", type: "bool" }],
+    stateMutability: "view",
+    type: "function",
+  },
+  {
+    inputs: [{ internalType: "address", name: "", type: "address" }],
+    name: "judges",
+    outputs: [{ internalType: "bool", name: "", type: "bool" }],
+    stateMutability: "view",
+    type: "function",
+  },
+  {
+    inputs: [{ internalType: "address", name: "", type: "address" }],
+    name: "lawyers",
+    outputs: [{ internalType: "bool", name: "", type: "bool" }],
+    stateMutability: "view",
+    type: "function",
+  },
+  {
+    inputs: [],
+    name: "owner",
+    outputs: [{ internalType: "address", name: "", type: "address" }],
+    stateMutability: "view",
+    type: "function",
+  },
+  {
+    inputs: [{ internalType: "address", name: "_judge", type: "address" }],
+    name: "revokeJudge",
+    outputs: [],
+    stateMutability: "nonpayable",
+    type: "function",
+  },
+  {
+    inputs: [{ internalType: "address", name: "_lawyer", type: "address" }],
+    name: "revokeLawyer",
+    outputs: [],
+    stateMutability: "nonpayable",
+    type: "function",
+  },
+];
 
-// Initialize contract info from deployment
-function loadContractInfo() {
-  try {
-    const deploymentPath = path.join(__dirname, "../../blockchain/deployment.json");
-    if (fs.existsSync(deploymentPath)) {
-      const deployment = JSON.parse(fs.readFileSync(deploymentPath, "utf8"));
-      contractAddress = deployment.contractAddress;
-    }
+// ─── Provider & Signer ───────────────────────────────────────────────────────
 
-    // Load ABI from compiled contract
-    const artifactPath = path.join(
-      __dirname,
-      "../../blockchain/artifacts/contracts/ChainOfCustody.sol/ChainOfCustody.json"
-    );
-    if (fs.existsSync(artifactPath)) {
-      const artifact = JSON.parse(fs.readFileSync(artifactPath, "utf8"));
-      contractABI = artifact.abi;
-    }
-  } catch (error) {
-    console.error("Error loading contract info:", error);
-  }
-}
-
-// Initialize on module load
-loadContractInfo();
-
-// Get provider (Sepolia testnet by default, or use environment variable)
-// --- Start of FIX for server/services/blockchain.js ---
-
-// Get provider (Sepolia testnet by default, or use environment variable)
 function getProvider() {
   const providerUrl = process.env.BLOCKCHAIN_RPC_URL || "https://rpc.sepolia.org";
 
-  // Detect network from URL (for logging/Etherscan links)
   const isSepolia = providerUrl.includes("sepolia") || providerUrl.includes("11155111");
   const isLocalhost = providerUrl.includes("localhost") || providerUrl.includes("127.0.0.1");
 
-  // *** THE FIX IS BELOW: Correctly passing URL and configuration options ***
-  
-  // 1. Define the network details
-  const network = {
-    name: "sepolia",
-    chainId: 11155111,
-  };
-
-  // 2. Define the provider options, including the timeout
+  const network = { name: "sepolia", chainId: 11155111 };
   const providerOptions = {
-    staticNetwork: true, // Prevent network detection (faster)
-    batchMaxCount: 1, // Disable batching for reliability
-    // Pass the request configuration to the Provider's options
-    // This correctly applies the timeout to the underlying fetch calls
-    request: {
-        timeout: 60000 // 60 seconds
-    }
+    staticNetwork: true,
+    batchMaxCount: 1,
+    request: { timeout: 60000 },
   };
 
-  // 3. Create provider using the URL, Network details, and Options
   const provider = new ethers.JsonRpcProvider(providerUrl, network, providerOptions);
 
-  // Store network info for Etherscan links (your original logic)
-  provider._networkInfo = {
-    isSepolia,
-    isLocalhost,
-    url: providerUrl
-  };
-
+  provider._networkInfo = { isSepolia, isLocalhost, url: providerUrl };
   return provider;
 }
 
-// --- End of FIX for server/services/blockchain.js ---
-
-// Get signer from private key
 function getSigner() {
-  const privateKey = process.env.PRIVATE_KEY || "0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80"; // Hardhat default
+  const privateKey =
+    process.env.PRIVATE_KEY ||
+    "0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80"; // Hardhat default
   const provider = getProvider();
   return new ethers.Wallet(privateKey, provider);
 }
 
-// Get signer address (helper for routes)
 async function getSignerAddress() {
   const signer = getSigner();
   return signer.address;
 }
 
-// Get contract instance
+// ─── Contract Instance ─────────────────────────────────────────────────────
+
 function getContract() {
-  if (!contractABI || !contractAddress) {
-    loadContractInfo();
-  }
-
-  if (!contractABI || !contractAddress) {
-    throw new Error("Contract not deployed. Please deploy the contract first.");
-  }
-
   const signer = getSigner();
-  return new ethers.Contract(contractAddress, contractABI, signer);
+  return new ethers.Contract(CONTRACT_ADDRESS, CONTRACT_ABI, signer);
 }
 
-// Add evidence to blockchain
-// hashBytes32 should be the file hash (SHA256 converted to bytes32 via keccak256)
+// ─── Blockchain Operations ────────────────────────────────────────────────
+
 async function addEvidence(hashBytes32, collectorAddress) {
   try {
-    // Test provider connection first
-    // *** FIX 1: Changed 'const' to 'let' for provider ***
     let provider = getProvider();
     try {
       await provider.getBlockNumber();
     } catch (providerError) {
-      throw new Error(`Cannot connect to blockchain RPC: ${providerError.message}. Check BLOCKCHAIN_RPC_URL in server/.env`);
+      throw new Error(
+        `Cannot connect to blockchain RPC: ${providerError.message}. Check BLOCKCHAIN_RPC_URL in server/.env`
+      );
     }
 
     const contract = getContract();
-
-    // Send transaction with increased timeout
     const tx = await contract.addEvidence(hashBytes32, collectorAddress);
 
-    // Wait for transaction with timeout
     const receipt = await Promise.race([
       tx.wait(),
       new Promise((_, reject) =>
-        setTimeout(() => reject(new Error("Transaction timeout - network may be slow")), 120000) // 2 minutes
-      )
+        setTimeout(() => reject(new Error("Transaction timeout - network may be slow")), 120000)
+      ),
     ]);
 
-    // Get the evidence ID from events in the receipt
     const event = receipt.logs
       .map((log) => {
         try {
@@ -141,13 +239,9 @@ async function addEvidence(hashBytes32, collectorAddress) {
       })
       .find((e) => e && e.name === "EvidenceAdded");
 
-    // Get network info for Etherscan link
-    provider = getProvider(); // SAFE now that 'provider' is 'let'
-    
-    // *** FIX 2: Changed 'const' to 'let' for networkInfo ***
-    let networkInfo = provider._networkInfo || {}; 
+    provider = getProvider();
+    let networkInfo = provider._networkInfo || {};
 
-    // Generate Etherscan URL if on Sepolia
     let etherscanUrl = null;
     if (networkInfo.isSepolia) {
       etherscanUrl = `https://sepolia.etherscan.io/tx/${tx.hash}`;
@@ -158,15 +252,14 @@ async function addEvidence(hashBytes32, collectorAddress) {
         success: true,
         evidenceId: event.args.evidenceId.toString(),
         transactionHash: tx.hash,
-        etherscanUrl: etherscanUrl,
+        etherscanUrl,
         network: networkInfo.isSepolia ? "sepolia" : networkInfo.isLocalhost ? "localhost" : "unknown",
       };
     }
 
-    // Fallback: get the latest evidence count
     const count = await contract.getEvidenceCount();
-    provider = getProvider(); // SAFE now that 'provider' is 'let'
-    networkInfo = provider._networkInfo || {}; // SAFE now that 'networkInfo' is 'let'
+    provider = getProvider();
+    networkInfo = provider._networkInfo || {};
 
     etherscanUrl = null;
     if (networkInfo.isSepolia) {
@@ -177,7 +270,7 @@ async function addEvidence(hashBytes32, collectorAddress) {
       success: true,
       evidenceId: count.toString(),
       transactionHash: tx.hash,
-      etherscanUrl: etherscanUrl,
+      etherscanUrl,
       network: networkInfo.isSepolia ? "sepolia" : networkInfo.isLocalhost ? "localhost" : "unknown",
     };
   } catch (error) {
@@ -186,12 +279,10 @@ async function addEvidence(hashBytes32, collectorAddress) {
   }
 }
 
-// Get original hash from blockchain
 async function getOriginalHash(evidenceId) {
   try {
     const contract = getContract();
     const result = await contract.getOriginalHash(evidenceId);
-
     return {
       hash: result.hash,
       collector: result.collector,
@@ -203,7 +294,7 @@ async function getOriginalHash(evidenceId) {
     throw error;
   }
 }
-// Check if address is judge
+
 async function isJudge(address) {
   try {
     const contract = getContract();
@@ -214,7 +305,6 @@ async function isJudge(address) {
   }
 }
 
-// Check if address is lawyer
 async function isLawyer(address) {
   try {
     const contract = getContract();
@@ -232,6 +322,5 @@ module.exports = {
   isLawyer,
   getProvider,
   getContract,
-  loadContractInfo,
   getSignerAddress,
 };

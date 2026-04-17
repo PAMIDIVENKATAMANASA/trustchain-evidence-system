@@ -1,119 +1,119 @@
-const { create } = require('ipfs-http-client')
 const crypto = require('crypto')
 
-// Initialize IPFS client (compatible with ipfs-http-client v57.x)
-let client = null
+// Pinata API configuration
+const PINATA_API_KEY = process.env.PINATA_API_KEY || ''
+const PINATA_SECRET_KEY = process.env.PINATA_SECRET_KEY || ''
+const PINATA_JWT = process.env.PINATA_JWT || ''
 
-function getIPFSClient() {
-  if (!client) {
-    const url = process.env.IPFS_URL || 'http://localhost:5001'
-
-    // For v57, we can pass a URL string
-    // Add timeout configuration
-    client = create({ 
-      url,
-      timeout: 30000, // 30 seconds timeout
-    })
-  }
-  return client
-}
-
-// Pin file to IPFS (keeps it available on network)
-async function pinFile(cid) {
-  try {
-    const ipfs = getIPFSClient()
-    
-    // Pin the file (recursive pin by default)
-    await ipfs.pin.add(cid, { recursive: true })
-    console.log(`✅ File pinned to IPFS: ${cid}`)
-    
-    // Also announce to DHT to make it discoverable
-    try {
-      await ipfs.dht.provide(cid)
-      console.log(`✅ File announced to IPFS DHT: ${cid}`)
-    } catch (dhtError) {
-      console.warn(`⚠️  Could not announce to DHT: ${dhtError.message}`)
-    }
-    
-    return { success: true, cid }
-  } catch (error) {
-    console.error('Error pinning file:', error)
-    // Don't throw - pinning failure shouldn't break upload
-    return { success: false, error: error.message }
-  }
-}
-
-// Upload file to IPFS (any type)
+// Upload file to IPFS via Pinata
 async function uploadToIPFS(fileBuffer, fileName) {
   try {
-    // Check if IPFS is accessible
-    const ipfsUrl = process.env.IPFS_URL || 'http://localhost:5001'
-    
-    // Test IPFS connection first
-    try {
-      const testResponse = await fetch(`${ipfsUrl}/api/v0/version`, {
-        method: 'POST',
-        signal: AbortSignal.timeout(5000) // 5 second timeout
-      })
-      if (!testResponse.ok) {
-        throw new Error(`IPFS API not responding: ${testResponse.status}`)
-      }
-    } catch (testError) {
-      throw new Error(`IPFS daemon is not running or not accessible at ${ipfsUrl}. Please start IPFS: ipfs daemon`)
+    if (!PINATA_JWT && !PINATA_API_KEY) {
+      throw new Error('Pinata credentials not configured. Set PINATA_JWT or PINATA_API_KEY/PINATA_SECRET_KEY in .env')
     }
 
-    const ipfs = getIPFSClient()
+    // Use dynamic import for node-fetch (ESM module)
+    const FormData = require('form-data')
+    const formData = new FormData()
 
-    const result = await ipfs.add({
-      path: fileName,
-      content: fileBuffer,
+    // Add file buffer as a stream-like object
+    formData.append('file', fileBuffer, {
+      filename: fileName,
+      contentType: 'application/octet-stream',
     })
 
-    const cid = result.cid.toString()
+    // Add pinata metadata
+    const metadata = JSON.stringify({ name: fileName })
+    formData.append('pinataMetadata', metadata)
 
-    // Automatically pin the file to keep it available on the network
-    try {
-      await pinFile(cid)
-    } catch (pinError) {
-      console.warn(`⚠️  Could not pin file ${cid}:`, pinError.message)
-      // Continue even if pinning fails - file is still uploaded
+    const headers = {
+      ...formData.getHeaders(),
     }
+
+    // Prefer JWT auth, fall back to API key pair
+    if (PINATA_JWT) {
+      headers['Authorization'] = `Bearer ${PINATA_JWT}`
+    } else {
+      headers['pinata_api_key'] = PINATA_API_KEY
+      headers['pinata_secret_api_key'] = PINATA_SECRET_KEY
+    }
+
+    const response = await fetch('https://api.pinata.cloud/pinning/pinFileToIPFS', {
+      method: 'POST',
+      headers,
+      body: formData,
+    })
+
+    if (!response.ok) {
+      const errorText = await response.text()
+      throw new Error(`Pinata upload failed (${response.status}): ${errorText}`)
+    }
+
+    const result = await response.json()
+    const cid = result.IpfsHash
+
+    console.log(`✅ File uploaded to IPFS via Pinata: ${cid}`)
 
     return {
       success: true,
       cid,
-      path: result.path,
-      size: result.size,
+      path: fileName,
+      size: result.PinSize,
     }
   } catch (error) {
-    console.error('Error uploading to IPFS:', error)
-    if (error.message.includes('IPFS daemon')) {
-      throw new Error(`IPFS Error: ${error.message}. Make sure IPFS daemon is running: 'ipfs daemon'`)
-    }
+    console.error('Error uploading to IPFS via Pinata:', error)
     throw error
   }
 }
 
-// Download file from IPFS
+// Download file from IPFS via public gateway
 async function downloadFromIPFS(cid) {
   try {
-    const ipfs = getIPFSClient()
+    // Try Pinata dedicated gateway first, fallback to public gateway
+    const gatewayUrls = [
+      `https://gateway.pinata.cloud/ipfs/${cid}`,
+      `https://ipfs.io/ipfs/${cid}`,
+      `https://cloudflare-ipfs.com/ipfs/${cid}`,
+    ]
 
-    const chunks = []
-    for await (const chunk of ipfs.cat(cid)) {
-      chunks.push(chunk)
+    let lastError = null
+    for (const url of gatewayUrls) {
+      try {
+        const response = await fetch(url, {
+          signal: AbortSignal.timeout(30000), // 30 second timeout
+        })
+
+        if (!response.ok) {
+          throw new Error(`Gateway returned ${response.status}`)
+        }
+
+        const arrayBuffer = await response.arrayBuffer()
+        const fileBuffer = Buffer.from(arrayBuffer)
+
+        console.log(`✅ File downloaded from IPFS: ${cid} via ${url}`)
+
+        return {
+          success: true,
+          buffer: fileBuffer,
+        }
+      } catch (gatewayError) {
+        console.warn(`⚠️ Gateway ${url} failed: ${gatewayError.message}`)
+        lastError = gatewayError
+      }
     }
 
-    const fileBuffer = Buffer.concat(chunks)
-
-    return {
-      success: true,
-      buffer: fileBuffer,
-    }
+    throw new Error(`All IPFS gateways failed for CID ${cid}: ${lastError?.message}`)
   } catch (error) {
     console.error('Error downloading from IPFS:', error)
     throw error
   }
+}
+
+// Pin file to IPFS (no-op for Pinata since files are auto-pinned on upload)
+async function pinFile(cid) {
+  // Pinata automatically pins files when uploaded via their API
+  console.log(`✅ File ${cid} is already pinned on Pinata`)
+  return { success: true, cid }
 }
 
 // Calculate SHA-256 hash of file buffer (used for blockchain integrity)
@@ -123,10 +123,7 @@ function calculateFileHash(buffer) {
 
 // Get public gateway URL for a CID
 function getPublicGatewayURL(cid) {
-  const gatewayURL = process.env.IPFS_GATEWAY_URL || process.env.IPFS_GATEWAY_URL || 'http://localhost:8080'
-  // Support both with and without trailing slash
-  const baseURL = gatewayURL.endsWith('/') ? gatewayURL.slice(0, -1) : gatewayURL
-  return `${baseURL}/ipfs/${cid}`
+  return `https://gateway.pinata.cloud/ipfs/${cid}`
 }
 
 module.exports = {

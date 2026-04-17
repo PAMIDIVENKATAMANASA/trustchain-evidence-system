@@ -6,7 +6,29 @@ require("dotenv").config();
 const app = express();
 
 // Middleware
-app.use(cors());
+// CORS: allow Vercel frontend + localhost for development
+const allowedOrigins = [
+  process.env.FRONTEND_URL,       // Vercel production URL
+  'http://localhost:3000',         // Local Vite dev server
+  'http://localhost:5173',         // Vite default port
+].filter(Boolean);
+
+app.use(cors({
+  origin: function (origin, callback) {
+    // Allow requests with no origin (mobile apps, curl, etc.)
+    if (!origin) return callback(null, true);
+    if (allowedOrigins.some(allowed => origin.startsWith(allowed))) {
+      return callback(null, true);
+    }
+    // In production, also allow any *.vercel.app domain for preview deployments
+    if (origin.endsWith('.vercel.app')) {
+      return callback(null, true);
+    }
+    callback(new Error('Not allowed by CORS'));
+  },
+  credentials: true,
+}));
+
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
@@ -33,9 +55,9 @@ mongoose
   .connect(MONGODB_URI, {
     useNewUrlParser: true,
     useUnifiedTopology: true,
-    serverSelectionTimeoutMS: 30000, // 30 seconds
-    socketTimeoutMS: 45000, // 45 seconds
-    connectTimeoutMS: 30000, // 30 seconds
+    serverSelectionTimeoutMS: 30000,
+    socketTimeoutMS: 45000,
+    connectTimeoutMS: 30000,
     retryWrites: true,
     w: 'majority',
   })
@@ -57,4 +79,3 @@ app.listen(PORT, () => {
 });
 
 module.exports = app;
-

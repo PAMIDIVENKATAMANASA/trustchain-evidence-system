@@ -2,6 +2,7 @@ import React, { useState } from 'react'
 import { Link } from 'react-router-dom'
 import { toast } from 'react-toastify'
 import './Auth.css'
+import API_URL from '../config/api'
 
 const Register = ({ onLogin }) => {
   const [formData, setFormData] = useState({
@@ -25,7 +26,7 @@ const Register = ({ onLogin }) => {
     setLoading(true)
 
     try {
-      const response = await fetch('http://localhost:5000/api/auth/register', {
+      const response = await fetch(`${API_URL}/api/auth/register`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json'

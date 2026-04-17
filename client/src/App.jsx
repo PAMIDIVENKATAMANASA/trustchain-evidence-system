@@ -8,6 +8,7 @@ import OfficerDashboard from './components/OfficerDashboard'
 import JudgeDashboard from './components/JudgeDashboard'
 import LawyerDashboard from './components/LawyerDashboard'
 import { getAuthToken, setAuthToken, removeAuthToken } from './utils/auth'
+import API_URL from './config/api'
 
 function App() {
   const [user, setUser] = useState(null)
@@ -24,7 +25,7 @@ function App() {
 
   const fetchUser = async (token) => {
     try {
-      const response = await fetch('http://localhost:5000/api/auth/me', {
+      const response = await fetch(`${API_URL}/api/auth/me`, {
         headers: {
           'Authorization': `Bearer ${token}`
         }
@@ -52,11 +53,11 @@ function App() {
 
   if (loading) {
     return (
-      <div style={{ 
-        display: 'flex', 
+      <div style={{
+        display: 'flex',
         flexDirection: 'column',
-        justifyContent: 'center', 
-        alignItems: 'center', 
+        justifyContent: 'center',
+        alignItems: 'center',
         height: '100vh',
         background: 'linear-gradient(135deg, #667eea 0%, #764ba2 50%, #f093fb 100%)',
         backgroundSize: '400% 400%',
@@ -90,29 +91,29 @@ function App() {
       <div className="App">
         <ToastContainer position="top-right" autoClose={3000} />
         <Routes>
-          <Route 
-            path="/login" 
-            element={!user ? <Login onLogin={handleLogin} /> : <Navigate to={`/${user.role}`} />} 
+          <Route
+            path="/login"
+            element={!user ? <Login onLogin={handleLogin} /> : <Navigate to={`/${user.role}`} />}
           />
-          <Route 
-            path="/register" 
-            element={!user ? <Register onLogin={handleLogin} /> : <Navigate to={`/${user.role}`} />} 
+          <Route
+            path="/register"
+            element={!user ? <Register onLogin={handleLogin} /> : <Navigate to={`/${user.role}`} />}
           />
-          <Route 
-            path="/officer" 
-            element={user?.role === 'officer' ? <OfficerDashboard user={user} onLogout={handleLogout} /> : <Navigate to="/login" />} 
+          <Route
+            path="/officer"
+            element={user?.role === 'officer' ? <OfficerDashboard user={user} onLogout={handleLogout} /> : <Navigate to="/login" />}
           />
-          <Route 
-            path="/judge" 
-            element={user?.role === 'judge' ? <JudgeDashboard user={user} onLogout={handleLogout} /> : <Navigate to="/login" />} 
+          <Route
+            path="/judge"
+            element={user?.role === 'judge' ? <JudgeDashboard user={user} onLogout={handleLogout} /> : <Navigate to="/login" />}
           />
-          <Route 
-            path="/lawyer" 
-            element={user?.role === 'lawyer' ? <LawyerDashboard user={user} onLogout={handleLogout} /> : <Navigate to="/login" />} 
+          <Route
+            path="/lawyer"
+            element={user?.role === 'lawyer' ? <LawyerDashboard user={user} onLogout={handleLogout} /> : <Navigate to="/login" />}
           />
-          <Route 
-            path="/" 
-            element={user ? <Navigate to={`/${user.role}`} /> : <Navigate to="/login" />} 
+          <Route
+            path="/"
+            element={user ? <Navigate to={`/${user.role}`} /> : <Navigate to="/login" />}
           />
         </Routes>
       </div>

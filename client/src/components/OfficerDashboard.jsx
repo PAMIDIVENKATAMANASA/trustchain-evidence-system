@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react'
 import { toast } from 'react-toastify'
 import { getAuthHeaders } from '../utils/auth'
 import './Dashboard.css'
+import API_URL from '../config/api'
 
 const OfficerDashboard = ({ user, onLogout }) => {
   const [evidence, setEvidence] = useState([])
@@ -20,7 +21,7 @@ const OfficerDashboard = ({ user, onLogout }) => {
 
   const fetchEvidence = async () => {
     try {
-      const response = await fetch('http://localhost:5000/api/evidence', {
+      const response = await fetch(`${API_URL}/api/evidence`, {
         headers: getAuthHeaders()
       })
       if (response.ok) {
@@ -82,7 +83,7 @@ const OfficerDashboard = ({ user, onLogout }) => {
 
     try {
       const token = localStorage.getItem('trustchain_token')
-      const response = await fetch('http://localhost:5000/api/evidence/upload', {
+      const response = await fetch(`${API_URL}/api/evidence/upload`, {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${token}`
@@ -208,13 +209,13 @@ const OfficerDashboard = ({ user, onLogout }) => {
                       </a>
                       {item.ipfsHash && (
                         <a
-                          href={item.ipfsGatewayURL || `http://localhost:8080/ipfs/${item.ipfsHash}`}
+                          href={`https://gateway.pinata.cloud/ipfs/${item.ipfsHash}`}
                           target="_blank"
                           rel="noopener noreferrer"
                           className="ipfs-link"
-                          title="Opens via local IPFS gateway (localhost:8080). Make sure IPFS daemon is running."
+                          title="Opens via Pinata IPFS gateway"
                         >
-                          📦 View on IPFS (Local)
+                          📦 View on IPFS
                         </a>
                       )}
                     </div>

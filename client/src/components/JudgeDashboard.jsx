@@ -2,6 +2,7 @@ import React, { useState, useEffect, useCallback, useRef } from 'react'
 import { toast } from 'react-toastify'
 import { getAuthHeaders } from '../utils/auth'
 import './Dashboard.css'
+import API_URL from '../config/api'
 
 const JudgeDashboard = ({ user, onLogout }) => {
   const [evidence, setEvidence] = useState([])
@@ -43,7 +44,7 @@ const JudgeDashboard = ({ user, onLogout }) => {
     console.log(`%c[fetchEvidence] silent=${silent}`, 'color:blue')
     if (!silent) setInitialLoading(true)
     try {
-      const response = await fetch('http://localhost:5000/api/evidence', {
+      const response = await fetch(`${API_URL}/api/evidence`, {
         headers: getAuthHeaders()
       })
       if (response.ok) {
@@ -101,7 +102,7 @@ const JudgeDashboard = ({ user, onLogout }) => {
 
     try {
       console.log(`[handleVerify] 📡 POST /api/verification/${evidenceId}`)
-      const response = await fetch(`http://localhost:5000/api/verification/${evidenceId}`, {
+      const response = await fetch(`${API_URL}/api/verification/${evidenceId}`, {
         method: 'POST',
         headers: getAuthHeaders()
       })
@@ -139,7 +140,7 @@ const JudgeDashboard = ({ user, onLogout }) => {
   const handleViewFile = async (evidenceId, fileName, fileType) => {
     try {
       const token = localStorage.getItem('trustchain_token')
-      const response = await fetch(`http://localhost:5000/api/evidence/${evidenceId}/download`, {
+      const response = await fetch(`${API_URL}/api/evidence/${evidenceId}/download`, {
         headers: { 'Authorization': `Bearer ${token}` }
       })
 
@@ -258,13 +259,13 @@ const JudgeDashboard = ({ user, onLogout }) => {
                         </a>
                         {item.ipfsHash && (
                           <a
-                            href={item.ipfsGatewayURL || `http://localhost:8080/ipfs/${item.ipfsHash}`}
+                            href={`https://gateway.pinata.cloud/ipfs/${item.ipfsHash}`}
                             target="_blank"
                             rel="noopener noreferrer"
                             className="ipfs-link"
-                            title="Opens via local IPFS gateway (localhost:8080). Make sure IPFS daemon is running."
+                            title="Opens via Pinata IPFS gateway"
                           >
-                            📦 View on IPFS (Local)
+                            📦 View on IPFS
                           </a>
                         )}
                       </div>

@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react'
 import { toast } from 'react-toastify'
 import { getAuthHeaders } from '../utils/auth'
 import './Dashboard.css'
+import API_URL from '../config/api'
 
 const LawyerDashboard = ({ user, onLogout }) => {
   const [evidence, setEvidence] = useState([])
@@ -17,7 +18,7 @@ const LawyerDashboard = ({ user, onLogout }) => {
   const fetchEvidence = async () => {
     setLoading(true)
     try {
-      const response = await fetch('http://localhost:5000/api/evidence', {
+      const response = await fetch(`${API_URL}/api/evidence`, {
         headers: getAuthHeaders()
       })
       if (response.ok) {
@@ -35,7 +36,7 @@ const LawyerDashboard = ({ user, onLogout }) => {
     setAnalyzing(true)
     setAnalysisResult(null)
     try {
-      const response = await fetch(`http://localhost:5000/api/ai/analyze/${evidenceId}`, {
+      const response = await fetch(`${API_URL}/api/ai/analyze/${evidenceId}`, {
         method: 'POST',
         headers: {
           ...getAuthHeaders(),
@@ -62,7 +63,7 @@ const LawyerDashboard = ({ user, onLogout }) => {
   const handleViewFile = async (evidenceId, fileName, fileType) => {
     try {
       const token = localStorage.getItem('trustchain_token')
-      const response = await fetch(`http://localhost:5000/api/evidence/${evidenceId}/download`, {
+      const response = await fetch(`${API_URL}/api/evidence/${evidenceId}/download`, {
         headers: {
           'Authorization': `Bearer ${token}`
         }
